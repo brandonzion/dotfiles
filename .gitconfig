@@ -1,0 +1,13 @@
+[user]
+	name = brandonzion
+	email = brandonzion.sun@gmail.com
+[init]
+	defaultBranch = main
+[credential "https://dev.azure.com"]
+	useHttpPath = true
+[includeIf "gitdir:~/personal/"]
+  path = ~/.gitconfig-personal
+[includeIf "gitdir:~/school/"]
+  path = ~/.gitconfig-school
+[http]
+	postBuffer = 524288000
