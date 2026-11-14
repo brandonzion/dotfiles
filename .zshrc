@@ -119,6 +119,14 @@ source $ZSH/oh-my-zsh.sh
 
 alias gencmt='git diff --cached | llm -m claude-3-haiku "Write a conventional commit message. Just return the message."'
 
+# Connect to the home server and attach to a tmux session (created if missing).
+#   srv          -> session "main"
+#   srv aisle    -> session "aisle"
+# zsh -lc loads the login PATH so Homebrew's tmux is found over non-interactive SSH.
+if [[ "${HOST%%.*}" != "bsun-server" ]]; then
+  srv() { ssh -t lucky@bsun-server "zsh -lc 'tmux new -A -s ${1:-main}'" }
+fi
+
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 export PATH="/Library/TeX/texbin:$PATH"
