@@ -22,6 +22,13 @@ if [ -d "$HOME/.config/nvim" ] && [ ! -L "$HOME/.config/nvim" ]; then
 fi
 ln -sfn "$DOTFILES_DIR/nvim" "$HOME/.config/nvim"
 
+# Scripts (dev, tmux-sessionizer) -> ~/.local/bin, which .zshrc puts on PATH
+mkdir -p "$HOME/.local/bin"
+for f in "$DOTFILES_DIR"/bin/*; do ln -sf "$f" "$HOME/.local/bin/$(basename "$f")"; done
+
+# Project folder used by `dev` and tmux-sessionizer
+mkdir -p "$HOME/code"
+
 # Symlink custom OMZ plugins/themes
 rm -rf "$HOME/.oh-my-zsh/custom"
 ln -sf "$DOTFILES_DIR/oh-my-zsh-custom" "$HOME/.oh-my-zsh/custom"

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# dev [name] [dir] — attach to a project tmux session, creating the standard layout if missing.
+#   dev                  -> session named after the current folder, in the current folder
+#   dev aisle ~/code/aisle
+# Windows: 1 edit (nvim) · 2 shell · 3 run · 4 claude (if Claude Code is installed)
+set -euo pipefail
+
+dir="${2:-${1:+$HOME/code/$1}}"
+dir="${dir:-$PWD}"
+[ -d "$dir" ] || { echo "dev: no such directory: $dir" >&2; exit 1; }
+dir="$(cd "$dir" && pwd)"
+name="${1:-$(basename "$dir")}"
+name="${name//[.:]/_}"            # tmux session names can't contain . or :
+
+if ! tmux has-session -t "=$name" 2>/dev/null; then
+  # Each window starts a normal interactive shell (full PATH, your aliases);
+  # commands are typed into it, so quitting nvim/claude leaves you at a prompt.
+  tmux new-session -d -s "$name" -n edit   -c "$dir"
+  tmux new-window     -t "$name:" -n shell  -c "$dir"
+  tmux new-window     -t "$name:" -n run    -c "$dir"
+  tmux send-keys      -t "$name:edit" "nvim" Enter
+  if command -v claude >/dev/null 2>&1; then
+    tmux new-window   -t "$name:" -n claude -c "$dir"
+    tmux send-keys    -t "$name:claude" "claude" Enter
+  fi
+  tmux select-window  -t "$name:edit"
+fi
+
+if [ -n "${TMUX:-}" ]; then
+  tmux switch-client -t "=$name"
+else
+  tmux attach-session -t "=$name"
+fi

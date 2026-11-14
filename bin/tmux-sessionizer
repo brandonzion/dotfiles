@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# tmux-sessionizer — fuzzy-pick a running session or a project in ~/code.
+# Picking a project opens it with `dev` (creates the layout if needed).
+# Bound to prefix f in ~/.tmux.conf; also runnable from a shell.
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"   # fzf/tmux when launched from tmux
+CODE_DIR="${CODE_DIR:-$HOME/code}"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if ! command -v fzf >/dev/null 2>&1; then
+  echo "tmux-sessionizer: fzf not installed (brew install fzf)"; read -r -n1; exit 1
+fi
+
+sel=$(
+  {
+    tmux list-sessions -F 'session: #S' 2>/dev/null
+    find "$CODE_DIR" -mindepth 1 -maxdepth 1 -type d ! -name '.*' 2>/dev/null | sort
+  } | fzf --reverse --prompt='project> ' --header='sessions and ~/code projects'
+) || exit 0
+
+if [[ $sel == session:* ]]; then
+  name="${sel#session: }"
+  if [ -n "${TMUX:-}" ]; then tmux switch-client -t "=$name"; else tmux attach-session -t "=$name"; fi
+else
+  exec "$here/dev" "$(basename "$sel")" "$sel"
+fi
