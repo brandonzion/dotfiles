@@ -3,16 +3,18 @@
 # Wi-Fi changes and sleep; typing echoes instantly) and attach to a tmux session.
 #   srvm          -> session "main"
 #   srvm aisle    -> session "aisle"
-# Mosh can't forward ports, so a background `ssh -N` keeps the LocalForwards
-# from ~/.ssh/config (localhost:3000 etc.) alive. It's started once and reused.
-set -euo pipefail
-host=bsun-server
-session="${1:-main}"
+# Mosh can't forward ports, so while srvm runs, a background `ssh -N bsun-tunnel`
+# (forwards in ~/.ssh/config) is kept alive, reconnecting if it drops, and it is
+# stopped when srvm exits. Nothing is left running afterwards.
+set -uo pipefail
 
-if ! pgrep -f "ssh -fN $host" >/dev/null; then
-  ssh -fN "$host" || echo "srvm: port-forward tunnel failed to start (continuing without it)" >&2
+loop=""
+# Start a tunnel only if nothing is already listening on :3000 (e.g. another srvm).
+if ! lsof -nP -iTCP:3000 -sTCP:LISTEN >/dev/null 2>&1; then
+  ( while true; do ssh -N bsun-tunnel 2>/dev/null; sleep 5; done ) &
+  loop=$!
+  trap 'pkill -P "$loop" 2>/dev/null; kill "$loop" 2>/dev/null' EXIT
 fi
 
-exec mosh --ssh="ssh -o ClearAllForwardings=yes" \
-  --server=/opt/homebrew/bin/mosh-server \
-  "$host" -- /opt/homebrew/bin/tmux new -A -s "$session"
+mosh --server=/opt/homebrew/bin/mosh-server \
+  bsun-server -- /opt/homebrew/bin/tmux new -A -s "${1:-main}"
