@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# srvm [session] — connect to bsun-server with mosh (survives network drops,
+# Wi-Fi changes and sleep; typing echoes instantly) and attach to a tmux session.
+#   srvm          -> session "main"
+#   srvm aisle    -> session "aisle"
+# Mosh can't forward ports, so a background `ssh -N` keeps the LocalForwards
+# from ~/.ssh/config (localhost:3000 etc.) alive. It's started once and reused.
+set -euo pipefail
+host=bsun-server
+session="${1:-main}"
+
+if ! pgrep -f "ssh -fN $host" >/dev/null; then
+  ssh -fN "$host" || echo "srvm: port-forward tunnel failed to start (continuing without it)" >&2
+fi
+
+exec mosh --ssh="ssh -o ClearAllForwardings=yes" \
+  --server=/opt/homebrew/bin/mosh-server \
+  "$host" -- /opt/homebrew/bin/tmux new -A -s "$session"

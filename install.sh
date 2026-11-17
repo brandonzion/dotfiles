@@ -29,6 +29,16 @@ for f in "$DOTFILES_DIR"/bin/*; do ln -sf "$f" "$HOME/.local/bin/$(basename "$f"
 # Project folder used by `dev` and tmux-sessionizer
 mkdir -p "$HOME/code"
 
+# SSH: pull in the dotfiles' server config (port forwards etc.).
+# Include must come before any Host block, so it's prepended to ~/.ssh/config.
+mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+touch "$HOME/.ssh/config" && chmod 600 "$HOME/.ssh/config"
+INCLUDE_LINE="Include $DOTFILES_DIR/ssh/bsun-server.conf"
+if ! grep -qF "$INCLUDE_LINE" "$HOME/.ssh/config"; then
+  { echo "$INCLUDE_LINE"; echo; cat "$HOME/.ssh/config"; } > "$HOME/.ssh/config.tmp"
+  mv "$HOME/.ssh/config.tmp" "$HOME/.ssh/config" && chmod 600 "$HOME/.ssh/config"
+fi
+
 # Symlink custom OMZ plugins/themes
 rm -rf "$HOME/.oh-my-zsh/custom"
 ln -sf "$DOTFILES_DIR/oh-my-zsh-custom" "$HOME/.oh-my-zsh/custom"
